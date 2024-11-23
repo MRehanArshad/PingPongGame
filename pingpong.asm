@@ -4,6 +4,7 @@ jmp start
     pad2: dw 1918, 2078, 2238          ; value where pad2 should print
     ball: dw 2000                      ; value where ball will print
     direction: dw 1                    ; for setting the direction of ball
+   
 ; ------------- Subroutine for clearing the screen ---------------
 clrscr:
     push bp             
@@ -32,7 +33,7 @@ print_pads:
     push 0xb800
     pop es
     ; moving the value to print into ax
-    mov ax, 0x0708
+    mov ax, 0x7720
     ; moving the address of array that contain the location of pad1 into bx
     mov bx, pad1
     ; printing pad1
@@ -56,20 +57,117 @@ print_pads:
     popa
     ret
 
+; ---- Subroutine for checking the collision of the ball with any pad or wall ----
+return_true:
+    mov word[bp+4], 1
+    jmp exit_check_collision
+check_collision:
+    push bp
+    mov bp, sp
+    pusha               ; pushing value of all registers
+    push es
+    ; setting value of es 
+    push ds
+    pop es
+    mov di, pad1
+    mov ax, word[ball]  ; moving the value of ball into ax
+    mov cx, 3
+    repne scasw         ; for comparing the array of pad1 with ax
+    jz return_true      ; jump to return true 
+    mov di, pad2
+    mov cx, 3
+    repne scasw         ; for comparing the array of pad2 with ax
+    jz return_true
+    cmp ax, 160           ; for checking the collision with top wall
+    jle return_true
+    cmp ax, 3840        ; for checking the collision with bottom wall
+    jge return_true
+    mov dx, 0
+    sub ax, 156
+    mov bx, 160
+    div bx
+    cmp dx, 0
+    jz return_true
+    mov dx, 0
+    mov ax, word[ball]
+    mov bx, 160
+    div bx
+    cmp dx, 0
+    jz return_true
+    mov word[bp+4], 0       ; return false
+    exit_check_collision:
+    pop es
+    popa                ; restoring value of all registers
+    mov sp, bp
+    pop bp
+    ret
+
+; ------------ Subroutine for changing the direction of the ball ------------
+setDirection:
+    cmp word[direction], 4
+    jnz setDirectionInc
+        mov word[direction], 0
+    setDirectionInc:
+        add word[direction], 1
+    jmp changDirection_exit
+changDirection:
+    push bp
+    mov bp, sp
+    pusha
+
+    cmp word[bp+4], 1
+    jz setDirection
+
+    changDirection_exit:
+    popa
+    mov sp, bp
+    pop bp
+    ret
+
 ; ------------ Subroutine for printing the ball --------------------
 direction1:
-    sub word[ball], 159
+    push bp
+    mov bp, sp
+    sub word[ball], 156
+    sub sp, 2
+    call check_collision
+    call changDirection 
+    mov sp, bp
+    pop bp
     jmp print_ball_exit
 direction2:
+    push bp
+    mov bp, sp
     add word[ball], 164
+    sub sp, 2
+    call check_collision
+    call changDirection
+    mov sp, bp
+    pop bp
     jmp print_ball_exit
 direction3:
+    push bp
+    mov bp, sp
     add word[ball], 156
+    sub sp, 2
+    call check_collision
+    call changDirection
+    mov sp, bp
+    pop bp
     jmp print_ball_exit
 direction4:
+    push bp
+    mov bp, sp
     sub word[ball], 164
+    sub sp, 2
+    call check_collision
+    call changDirection
+    mov sp, bp
+    pop bp
     jmp print_ball_exit
 print_ball:
+    push bp
+    mov bp, sp
     pusha
     push es
     ; setting the value of es
@@ -92,15 +190,32 @@ print_ball:
     print_ball_exit:
     pop es
     popa
+    mov sp, bp
+    pop bp
     ret
+
+; --------- for Introducing some delay in the function ----------
+delay:
+    pusha
+    mov ax, 0
+    mov cx, 0xFFFF
+    delay_label:
+    inc ax
+    cmp ax, 0xFFFF
+    jnz delay_label
+    popa
+    ret
+
 ; ------------ Subroutine for printing the board --------------------
 print_board:
     call clrscr             ; clearing the screen
     call print_pads         ; for printing the pads
     call print_ball         ; for printing the ball
+    call delay              ; for introducing some delay
     ret
 start:
     call clrscr
     call print_board
+    jmp start
 mov ax, 0x4c00
 int 0x21
