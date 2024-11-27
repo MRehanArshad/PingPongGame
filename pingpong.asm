@@ -4,7 +4,10 @@ jmp start
     pad2: dw 1918, 2078, 2238          ; value where pad2 should print
     ball: dw 2000                      ; value where ball will print
     direction: dw 1                    ; for setting the direction of ball
-   
+    leftCollision: db 0
+    RightCollision: db 0
+    UpCollision: db 0
+    DownCollision: db 0
 ; ------------- Subroutine for clearing the screen ---------------
 clrscr:
     push bp             
@@ -58,6 +61,30 @@ print_pads:
     ret
 
 ; ---- Subroutine for checking the collision of the ball with any pad or wall ----
+left:
+    mov byte[leftCollision], 1
+    mov byte[RightCollision], 0
+    mov byte[UpCollision], 0
+    mov byte[DownCollision], 0
+    jmp return_true
+Right:
+    mov byte[leftCollision], 0
+    mov byte[RightCollision], 1
+    mov byte[UpCollision], 0
+    mov byte[DownCollision], 0
+    jmp return_true
+Up:
+    mov byte[leftCollision], 0
+    mov byte[RightCollision], 0
+    mov byte[UpCollision], 1
+    mov byte[DownCollision], 0
+    jmp return_true
+Down:
+    mov byte[leftCollision], 0
+    mov byte[RightCollision], 0
+    mov byte[UpCollision], 0
+    mov byte[DownCollision], 1
+    jmp return_true
 return_true:
     mov word[bp+4], 1
     jmp exit_check_collision
@@ -79,21 +106,21 @@ check_collision:
     repne scasw         ; for comparing the array of pad2 with ax
     jz return_true
     cmp ax, 160           ; for checking the collision with top wall
-    jle return_true
+    jle Up
     cmp ax, 3840        ; for checking the collision with bottom wall
-    jge return_true
+    jge Down
     mov dx, 0
     sub ax, 156
     mov bx, 160
     div bx
     cmp dx, 0
-    jz return_true
+    jz left
     mov dx, 0
     mov ax, word[ball]
     mov bx, 160
     div bx
     cmp dx, 0
-    jz return_true
+    jz right
     mov word[bp+4], 0       ; return false
     exit_check_collision:
     pop es
