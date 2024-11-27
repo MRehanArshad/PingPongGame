@@ -61,7 +61,7 @@ print_pads:
     ret
 
 ; ---- Subroutine for checking the collision of the ball with any pad or wall ----
-left:
+Left:
     mov byte[leftCollision], 1
     mov byte[RightCollision], 0
     mov byte[UpCollision], 0
@@ -114,13 +114,13 @@ check_collision:
     mov bx, 160
     div bx
     cmp dx, 0
-    jz left
+    jz Left
     mov dx, 0
     mov ax, word[ball]
     mov bx, 160
     div bx
     cmp dx, 0
-    jz right
+    jz Right
     mov word[bp+4], 0       ; return false
     exit_check_collision:
     pop es
