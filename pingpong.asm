@@ -100,11 +100,11 @@ check_collision:
     mov ax, word[ball]  ; moving the value of ball into ax
     mov cx, 3
     repne scasw         ; for comparing the array of pad1 with ax
-    jz return_true      ; jump to return true 
+    jz Right             ; jump to return true 
     mov di, pad2
     mov cx, 3
     repne scasw         ; for comparing the array of pad2 with ax
-    jz return_true
+    jz Left
     cmp ax, 160           ; for checking the collision with top wall
     jle Up
     cmp ax, 3840        ; for checking the collision with bottom wall
@@ -114,13 +114,13 @@ check_collision:
     mov bx, 160
     div bx
     cmp dx, 0
-    jz Left
+    jz Right
     mov dx, 0
     mov ax, word[ball]
     mov bx, 160
     div bx
     cmp dx, 0
-    jz Right
+    jz Left
     mov word[bp+4], 0       ; return false
     exit_check_collision:
     pop es
@@ -130,12 +130,40 @@ check_collision:
     ret
 
 ; ------------ Subroutine for changing the direction of the ball ------------
-setDirection:
-    cmp word[direction], 4
+Novelty1:
+    cmp byte[RightCollision], 1
     jnz setDirectionInc
+    mov word[direction], 4
+    jmp setDirection_exit
+Novelty2:
+    cmp byte[DownCollision], 1
+    jnz setDirectionInc
+    mov word[direction], 1
+    jmp setDirection_exit 
+Novelty3:
+    cmp byte[leftCollision], 1
+    jnz setDirectionInc
+    mov word[direction], 2
+    jmp setDirection_exit
+Novelty4:
+    cmp byte[UpCollision], 1
+    jnz for4
+    mov word[direction], 3
+    jmp setDirection_exit
+setDirection:
+    cmp word[direction], 1
+    jz Novelty1
+    cmp word[direction], 2
+    jz Novelty2
+    cmp word[direction], 3
+    jz Novelty3
+    cmp word[direction], 4
+    jz Novelty4
+    for4:
         mov word[direction], 0
     setDirectionInc:
         add word[direction], 1
+    setDirection_exit:
     jmp changDirection_exit
 changDirection:
     push bp
