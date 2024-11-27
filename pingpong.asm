@@ -36,7 +36,7 @@ print_pads:
     push 0xb800
     pop es
     ; moving the value to print into ax
-    mov ax, 0x7720
+    mov ax, 0x4F20
     ; moving the address of array that contain the location of pad1 into bx
     mov bx, pad1
     ; printing pad1
@@ -47,6 +47,7 @@ print_pads:
     mov di, [bx+4]
     stosw
     ; moving the address of array that contain the location of pad2 into bx
+    mov ax, 0x1F20
     mov bx, pad2
     ; printing pad2
     mov di, [bx]
@@ -231,7 +232,7 @@ print_ball:
 
     mov bx, ball    ; moving the address of variable that contain the location of ball
     mov di, [bx]    ; setting the value of di
-    mov ax, 0x074F  ; moving the value to print into ax
+    mov ax, 0x0E4F  ; moving the value to print into ax
     stosw           ; printing the ball on the screen
     cmp word[direction], 1  
     jz direction1
