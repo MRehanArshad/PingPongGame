@@ -1,7 +1,7 @@
 [org 0x100]
 jmp start
-    pad1: dw 1760, 1920, 2080          ; value where pad1 should print
-    pad2: dw 1918, 2078, 2238          ; value where pad2 should print
+    pad1: dw 1762, 1922, 2082          ; value where pad1 should print
+    pad2: dw 1916, 2076, 2236          ; value where pad2 should print
     ball: dw 2000                      ; value where ball will print
     direction: dw 1                    ; for setting the direction of ball
     leftCollision: db 0
@@ -27,6 +27,79 @@ clrscr:
     mov sp, bp
     pop bp
     ret
+
+; ------------ For Printing the Square -------------------
+
+return_true2:
+    mov word[bp+4], 1
+    jmp square_condition_exit
+square_condition:
+    push bp
+    mov bp, sp
+    pusha
+    mov ax, [bp+10]
+    cmp [bp+8], ax
+    jz return_true2
+    cmp word[bp+8], 1
+    jz return_true2
+    cmp word[bp+6], 80
+    jz return_true2
+    cmp word[bp+6], 1
+    jz return_true2
+    mov word[bp+4], 0
+    square_condition_exit:
+    popa
+    mov sp, bp
+    pop bp
+    ret
+
+printEstarik:
+    push 0xb800
+    pop es
+    mov ax, [bp+4]
+    mov word[es:di], ax         ; for printing an estarik
+    jmp square_loop_2_next
+square:
+    push bp
+    mov bp,sp
+    pusha
+
+    mov si, 25   ; for storing the length of square
+    mov cx, 25          ; moving length of square
+    mov di, 0          ; moving the starting of di
+
+
+    square_loop_1:
+        mov dx, 80      ; moving the length of the square
+        square_loop_2:
+            mov ax, 0
+            push si
+            push cx
+            push dx
+            sub sp, 2
+            call square_condition
+            pop ax
+            pop dx
+            pop cx
+            pop si
+            cmp ax, 1
+            jz printEstarik
+            square_loop_2_next:
+            add di, 2
+            sub dx, 1
+            cmp dx, 0
+            jnz square_loop_2
+        ; shl si, 1
+        ; add di, 160
+        ; sub di, si
+        ; sub di, si
+        ; shr si, 1
+    loop square_loop_1
+
+    popa
+    mov sp, bp
+    pop bp
+    ret 2
 
 ; ------------- Subroutine for printing the pad --------------
 print_pads:
@@ -101,14 +174,14 @@ check_collision:
     mov ax, word[ball]  ; moving the value of ball into ax
     mov cx, 3
     repne scasw         ; for comparing the array of pad1 with ax
-    jz Right             ; jump to return true 
+    jz Left             ; jump to return true 
     mov di, pad2
     mov cx, 3
     repne scasw         ; for comparing the array of pad2 with ax
-    jz Left
-    cmp ax, 160           ; for checking the collision with top wall
+    jz Right
+    cmp ax, 320           ; for checking the collision with top wall
     jle Up
-    cmp ax, 3840        ; for checking the collision with bottom wall
+    cmp ax, 3680        ; for checking the collision with bottom wall
     jge Down
     mov dx, 0
     sub ax, 156
@@ -118,6 +191,7 @@ check_collision:
     jz Right
     mov dx, 0
     mov ax, word[ball]
+    sub ax, 4
     mov bx, 160
     div bx
     cmp dx, 0
@@ -265,6 +339,8 @@ delay:
 ; ------------ Subroutine for printing the board --------------------
 print_board:
     call clrscr             ; clearing the screen
+    push 0xFE20
+    call square
     call print_pads         ; for printing the pads
     call print_ball         ; for printing the ball
     call delay              ; for introducing some delay
