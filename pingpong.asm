@@ -18,12 +18,17 @@ pausegame: db 0                    ; pausegame flag
 CollisionPad: db 0
 pattern_flag: db 0
 pattern_di: dw 0
+previous_segment: dw 0
+previous_ip: dw 0
 
+reset: db 'Press R to restart and E to exit!', 0
+size_reset: dw 33
 Player1: db 'Player 1 Won !!!!', 0
 length1: dw 17
 Player2: db 'Player 2 Won !!!!', 0
 length2: dw 17
-
+restart_flag: db 0
+exit_flag: db 0
 
 ;----- Pattern Printing 
 pattern:
@@ -91,27 +96,34 @@ ret 4
 
 UpArrowKey:
 cmp word[pad2], 636
-jl nomatch
+jl nomatch1
 sub word[pad2], 160
 sub word[pad2+2], 160
 sub word[pad2+4], 160
 sub byte[pad2_x], 1
 sub byte[pad2_x + 1], 1
 sub byte[pad2_x + 2], 1
-jmp nomatch
+jmp nomatch1
 
 DownArrowKey:
 cmp word[pad2+4], 3518
-jg nomatch
+jg nomatch1
 add word[pad2], 160
 add word[pad2+2], 160
 add word[pad2+4], 160
 add byte[pad2_x], 1
 add byte[pad2_x + 1], 1
 add byte[pad2_x + 2], 1
-jmp nomatch
+jmp nomatch1
 
 ; ---- For Movement in the pads ----
+
+pattern_pause:
+    xor byte[pattern_flag], 1
+    jmp nomatch1
+
+nomatch1:
+    jmp nomatch
 
 kbisr:        
 push ax 
@@ -120,6 +132,8 @@ push es
 mov  ax, 0xb800 
 mov  es, ax             ; point es to video memory 
 in   al, 0x60           ; read a char from keyboard port 
+cmp al, 0x19
+je pattern_pause
 cmp  al, 0x11           ; is the key 'W'
 je Wkey
 cmp al, 0x1F            ; is the key 'S'
@@ -129,15 +143,22 @@ je UpArrowKey
 cmp al, 0x50            ; is UP arrow
 je DownArrowKey
 cmp al, 0x1C            ; is ENTER key
-je Gamepause
-cmp al, 0x19            ; is 'P' key
-je updatepatternflag
+je Gamepause1
+cmp al, 0x13            ; is the key 'R'
+je Reset_1
+cmp al, 0x12            ; is the key 'E'
+je end_game
+
 nomatch:      
 mov  al, 0x20           ; Send EOI to PIC
 out  0x20, al
 pop  es
 pop  ax
 iret
+
+end_game:
+mov byte[exit_flag], 1
+jmp nomatch    
 
 Wkey:
 cmp word[pad1], 482
@@ -149,6 +170,11 @@ sub byte[pad1_x], 1
 sub byte[pad1_x + 1], 1
 sub byte[pad1_x + 2], 1
 jmp nomatch
+
+Reset_1:
+    jmp Reset2
+Gamepause1:
+    jmp Gamepause
 
 Skey:
 cmp word[pad1+4], 3520
@@ -165,9 +191,7 @@ Gamepause:
 xor byte[pausegame], 1
 jmp nomatch    
 
-updatepatternflag:
-xor byte[pattern_flag], 1
-jmp nomatch
+
 
 ; ---- For clearing the Screen ----
 clrscr:
@@ -194,6 +218,7 @@ popa
 mov sp, bp
 pop bp
 ret
+
 
 ; ---- For Printing the Wall ----
 printWall:
@@ -243,6 +268,33 @@ padCollision2:
         mov byte[CollisionPad], 0
         ret
 
+Reset2:
+    jmp Reset3
+
+;---- New Game 
+newGame:
+
+mov di, 1960
+push reset
+push word[size_reset]
+call printstr
+restart_prompt:
+cmp byte[restart_flag], 1
+jz exit_loop
+cmp byte[exit_flag], 1
+jz exit_loop2
+jmp restart_prompt
+exit_loop:
+mov byte[restart_flag], 0
+jmp start
+exit_loop2:
+    mov ax, 0
+    mov es, ax
+    mov ax, word[previous_ip]
+    mov word[es:9*4], ax
+    mov ax, word[previous_segment]
+    mov word[es:9*4+2], ax
+    jmp endProgram
 ; ---- Player 1 Wins ----
 player1Wins:
 pusha
@@ -251,8 +303,7 @@ push Player1
 push word[length1]
 call printstr
 popa
-mov ax, 0x4c00
-int 0x21
+call newGame
 ; ---- Player 2 Wins ----
 player2Wins:
 pusha
@@ -261,8 +312,7 @@ push Player2
 push word[length2]
 call printstr
 popa
-mov ax, 0x4c00
-int 0x21
+call newGame
 
 ; ----- player 1 score
 p1_score:
@@ -326,6 +376,7 @@ exit_checkCollision:
 pop bp
 ret
 
+
 ; ----- For Adding x and y ------
 xpositive:
 add byte[ballx], 1
@@ -346,6 +397,9 @@ jmp Addxy_checky
 Yispositive:
 call ypositive
 jmp Addxy_exit
+
+Reset3
+    jmp Reset_Tag
 
 Addxy:
 pusha
@@ -454,11 +508,55 @@ loop delay_label
 popa
 ret
 
+;----- Resets the whole game values to restart the game
+Reset_Tag:
+    pusha
+
+    mov word[pad1], 1764
+    mov word[pad1 + 2], 1924
+    mov word[pad1 + 4], 2084          ; value where pad2 should print
+    mov byte[pad1_x], 11
+    mov byte[pad1_x+1], 12
+    mov byte[pad1_x+2], 13
+    mov word[pad2], 1916
+    mov word[pad2 + 2], 2076
+    mov word[pad2 + 4], 2236          ; value where pad2 should print
+    mov byte[pad2_x], 11
+    mov byte[pad2_x+1], 12
+    mov byte[pad2_x+2], 13
+    mov byte[ballx], 12
+    mov byte[bally], 40
+    mov byte[toxpositive], 0                  ; for x in positive flag 
+    mov byte[toypositive], 1                  ; for x in negative flag 
+    mov byte[scoreL],0                       ; Score for left player
+    mov byte[scoreR], 0                       ; Score for Right Player
+    mov word[scorediL],3690                   ; di for score L 
+    mov word[scorediR], 3828                   ; di for score R 
+    mov byte[pausegame],0                    ; pausegame flag 
+    mov byte[CollisionPad], 0
+    mov byte[pattern_flag], 0
+    mov word[pattern_di], 0
+    mov byte[restart_flag], 1               ;To restart the game
+    popa
+    mov  al, 0x20           ; Send EOI to PIC
+    out  0x20, al
+    pop  es
+    pop  ax
+    iret
+
+
 ; ---- This is Start Label ----
 start:
 xor ax, ax 
 mov es, ax             ; point es to IVT base 
 cli                     ; disable interrupts 
+mov bx, previous_ip
+mov ax, word[es:9*4]
+mov word[bx], ax
+mov bx, previous_segment
+mov ax, word[es:9 * 4 + 2]
+mov word[bx], ax
+
 mov  word [es:9*4], kbisr ; store offset at n*4 
 mov  [es:9*4+2], cs     ; store segment at n*4+2 
 sti                     ; enable interrupts
@@ -474,5 +572,6 @@ call delay
 call delay
 jmp start_loop
 
+endProgram:
 mov ax, 0x4c00
 int 0x21
