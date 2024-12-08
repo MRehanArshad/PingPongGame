@@ -291,6 +291,12 @@ jz exit_loop2
 jmp restart_prompt
 exit_loop:
 mov byte[restart_flag], 0
+mov ax, 0
+mov es, ax
+mov ax, word[previous_ip]
+mov word[es:9*4], ax
+mov ax, word[previous_segment]
+mov word[es:9*4+2], ax
 jmp start
 exit_loop2:
     mov ax, 0
