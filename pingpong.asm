@@ -12,6 +12,7 @@ scoreL: db 0                       ; Score for left player
 scoreR: db 0                       ; Score for Right Player
 scorediL: dw 330                   ; di for score L 
 scorediR: dw 468                   ; di for score R 
+pausegame: db 0                    ; pausegame flag 
 
 ; ---- For Movement in the pads ----
 
@@ -30,12 +31,13 @@ cmp al, 0x48            ; is down arrow
 je UpArrowKey  
 cmp al, 0x50            ; is UP arrow
 je DownArrowKey
-
+cmp al, 0x1C            ; is ENTER key
+je Gamepause
 nomatch:      
-mov  al, 0x20 
-out  0x20, al           ; send EOI to PIC 
-pop  es 
-pop  ax 
+mov  al, 0x20           ; Send EOI to PIC
+out  0x20, al
+pop  es
+pop  ax
 iret
 
 Wkey:
@@ -69,6 +71,10 @@ add word[pad2], 160
 add word[pad2+2], 160
 add word[pad2+4], 160
 jmp nomatch
+
+Gamepause:
+xor byte[pausegame], 1
+jmp nomatch    
 
 ; ---- For clearing the Screen ----
 clrscr:
@@ -283,6 +289,8 @@ mov  [es:9*4+2], cs     ; store segment at n*4+2
 sti                     ; enable interrupts
 call printWall
 start_loop:
+cmp byte[pausegame], 1
+jz start_loop
 call clrscr
 call printBoard
 call delay
