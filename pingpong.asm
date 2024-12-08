@@ -10,8 +10,8 @@ toxpositive: db 0                  ; for x in positive flag
 toypositive: db 1                  ; for x in negative flag 
 scoreL: db 0                       ; Score for left player
 scoreR: db 0                       ; Score for Right Player
-scorediL: dw 330                   ; di for score L 
-scorediR: dw 468                   ; di for score R 
+scorediL: dw 3690                  ; di for score L 
+scorediR: dw 3828                  ; di for score R 
 pausegame: db 0                    ; pausegame flag 
 
 ; ---- For Movement in the pads ----
@@ -250,12 +250,12 @@ push es
 push 0xb800
 pop es
 mov di, word[scorediL]  ; for pointing di to appropiate location
-mov ah, 0x07 
+mov ah, 0x70 
 mov al, byte[scoreL]
 add al, 0x30
 stosw
 mov di, word[scorediR]  ; for pointing di to appropiate location
-mov ah, 0x07
+mov ah, 0x70
 mov al, byte[scoreR]
 add al, 0x30
 stosw
