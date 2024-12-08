@@ -1,8 +1,10 @@
 [org 0x100]
 jmp start
 ; ---- Data Variables ----
-pad1: dw 1764, 1924, 2084          ; value where pad1 should print
+pad1: dw 1764, 1924, 2084          ; value where pad1 should print 
+pad1_x: db 11, 12, 13              ; for tracking the row number 
 pad2: dw 1916, 2076, 2236          ; value where pad2 should print
+pad2_x: db 11, 12, 13
 ballx: db 12
 bally: db 40
 ball: db 'O', 0
@@ -46,6 +48,9 @@ jl nomatch
 sub word[pad1], 160
 sub word[pad1+2], 160
 sub word[pad1+4], 160
+sub byte[pad1_x], 1
+sub byte[pad1_x+1], 1
+sub byte[pad1_x+2], 1
 jmp nomatch
 
 Skey:
@@ -54,6 +59,9 @@ jg nomatch
 add word[pad1], 160
 add word[pad1+2], 160
 add word[pad1+4], 160
+add byte[pad1_x], 1
+add byte[pad1_x+1], 1
+add byte[pad1_x+2], 1
 jmp nomatch
 
 UpArrowKey:
@@ -62,6 +70,9 @@ jl nomatch
 sub word[pad2], 160
 sub word[pad2+2], 160
 sub word[pad2+4], 160
+sub byte[pad2_x], 1
+sub byte[pad2_x+1], 1
+sub byte[pad2_x+2], 1
 jmp nomatch
 
 DownArrowKey:
@@ -70,6 +81,9 @@ jg nomatch
 add word[pad2], 160
 add word[pad2+2], 160
 add word[pad2+4], 160
+add byte[pad1_x], 1
+add byte[pad1_x+1], 1
+add byte[pad1_x+2], 1
 jmp nomatch
 
 Gamepause:
