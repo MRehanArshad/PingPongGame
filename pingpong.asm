@@ -279,8 +279,8 @@ Reset2:
 newGame:
 
 mov di, 2280
-push reset
 push 0x0700
+push reset
 push word[size_reset]
 call printstr
 restart_prompt:
