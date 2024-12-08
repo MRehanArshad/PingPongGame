@@ -16,11 +16,54 @@ scorediL: dw 3690                   ; di for score L
 scorediR: dw 3828                   ; di for score R 
 pausegame: db 0                    ; pausegame flag 
 CollisionPad: db 0
+pattern_flag: db 0
+pattern_di: dw 0
 
 Player1: db 'Player 1 Won !!!!', 0
 length1: dw 17
 Player2: db 'Player 2 Won !!!!', 0
 length2: dw 17
+
+
+;----- Pattern Printing 
+pattern:
+    pusha
+    push 0xb800
+    pop es
+    mov bx, 1            ;Check for Ball
+    mov dx, 1942
+    mov di, [pattern_di]
+
+        mov cx, dx
+        print:
+            mov ax, [es:di]
+
+            cmp ah, 0xFF            ;Wall
+            jz skip_print
+            cmp ah, 0x6F            ;Pad 1
+            jz skip_print
+            cmp ah, 0x3F            ;Pad 2
+            jz skip_print
+            cmp ah, 0x04         ;Ball ASCII
+            jz skip_print
+            cmp ah, 0x72
+            jz skip_print
+            mov word[es:di], 0x012A
+            skip_print:
+            add di, 166
+            loop print
+
+        cmp byte[pattern_flag], 0
+        jz skip_add
+
+        add word[pattern_di], 2
+        skip_add:
+        cmp word[pattern_di], 158
+        jl continue
+        mov word[pattern_di], 0
+        continue:
+    popa
+    ret
 
 ; ---- For printing the string ----
 printstr:
@@ -325,7 +368,7 @@ push es
 mov  ah, 0x13           ; service 13 - print string 
 mov  al, 0              ; subservice 01 – update cursor 
 mov  bh, 0              ; output on page 0 
-mov  bl, 7              ; normal attrib 
+mov  bl, 2              ; normal attrib 
 mov  dh, byte[ballx]
 mov dl, byte[bally] 
 mov  cx, 1              ; length of string 
@@ -376,12 +419,12 @@ push es
 push 0xb800
 pop es
 mov di, word[scorediL]  ; for pointing di to appropiate location
-mov ah, 0x70 
+mov ah, 0x72 
 mov al, byte[scoreL]
 add al, 0x30
 stosw
 mov di, word[scorediR]  ; for pointing di to appropiate location
-mov ah, 0x70
+mov ah, 0x72
 mov al, byte[scoreR]
 add al, 0x30
 stosw
@@ -418,9 +461,8 @@ start_loop:
 cmp byte[pausegame], 1
 jz start_loop
 call clrscr
+call pattern
 call printBoard
-call delay
-call delay
 call delay
 call delay
 call delay
