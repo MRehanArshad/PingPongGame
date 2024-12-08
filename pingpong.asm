@@ -197,7 +197,7 @@ pusha
 push es
 
 mov  ah, 0x13           ; service 13 - print string 
-mov  al, 1              ; subservice 01 – update cursor 
+mov  al, 0              ; subservice 00 – don't update cursor 
 mov  bh, 0              ; output on page 0 
 mov  bl, 7              ; normal attrib 
 mov  dh, byte[ballx]
