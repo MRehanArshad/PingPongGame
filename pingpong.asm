@@ -347,7 +347,7 @@ push es
 
 push 0xb800                ; setting the value of es register
 pop es
-mov ax, 0x4F20             ; moving the value to print into ax
+mov ax, 0x6F20             ; moving the value to print into ax
 mov bx, pad1               ; moving the address of array that contain the location of pad1 into bx 
 mov di, [bx]               ; printing pad1 
 stosw
@@ -355,7 +355,7 @@ mov di, [bx+2]
 stosw
 mov di, [bx+4]
 stosw
-mov ax, 0x1F20             ; moving the address of array that contain the location of pad2 into bx 
+mov ax, 0x3F20             ; moving the address of array that contain the location of pad2 into bx 
 mov bx, pad2
 mov di, [bx]
 stosw
