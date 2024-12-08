@@ -130,6 +130,8 @@ cmp al, 0x50            ; is UP arrow
 je DownArrowKey
 cmp al, 0x1C            ; is ENTER key
 je Gamepause
+cmp al, 0x19            ; is 'P' key
+je updatepatternflag
 nomatch:      
 mov  al, 0x20           ; Send EOI to PIC
 out  0x20, al
@@ -162,6 +164,10 @@ jmp nomatch
 Gamepause:
 xor byte[pausegame], 1
 jmp nomatch    
+
+updatepatternflag:
+xor byte[pattern_flag], 1
+jmp nomatch
 
 ; ---- For clearing the Screen ----
 clrscr:
