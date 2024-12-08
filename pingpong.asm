@@ -21,6 +21,10 @@ pattern_di: dw 0
 previous_segment: dw 0
 previous_ip: dw 0
 
+membername1: db 'RehanArshad 23F-3098', 0
+m1_len: dw 20
+membername2: db 'FaizanRizwan 23F-3057', 0
+m2_len: dw 21
 reset: db 'Press R to restart and E to exit!', 0
 size_reset: dw 33
 Player1: db 'Player 1 Won !!!!', 0
@@ -82,7 +86,7 @@ pop es
 
 mov cx, [bp+4]
 mov si, [bp+6]
-mov ah, 0x07
+mov ax, [bp+8]
 next:
 
 lodsb
@@ -92,7 +96,7 @@ pop es
 popa
 mov sp, bp
 pop bp
-ret 4
+ret 6
 
 UpArrowKey:
 cmp word[pad2], 636
@@ -276,6 +280,7 @@ newGame:
 
 mov di, 2280
 push reset
+push 0x0700
 push word[size_reset]
 call printstr
 restart_prompt:
@@ -299,6 +304,7 @@ exit_loop2:
 player1Wins:
 pusha
 mov di, 1980
+push 0x0700
 push Player1
 push word[length1]
 call printstr
@@ -308,6 +314,7 @@ call newGame
 player2Wins:
 pusha
 mov di, 1980
+push 0x0700
 push Player2
 push word[length2]
 call printstr
@@ -547,6 +554,20 @@ Reset_Tag:
 
 ; ---- This is Start Label ----
 start:
+mov di, 1960
+call printWall
+push 0x7400
+push membername1
+push word[m1_len]
+call printstr
+push 0x7400
+mov di, 2120
+push membername2
+push word[m2_len]
+call printstr
+mov ah, 0
+int 0x16
+
 xor ax, ax 
 mov es, ax             ; point es to IVT base 
 cli                     ; disable interrupts 
@@ -560,7 +581,6 @@ mov word[bx], ax
 mov  word [es:9*4], kbisr ; store offset at n*4 
 mov  [es:9*4+2], cs     ; store segment at n*4+2 
 sti                     ; enable interrupts
-call printWall
 start_loop:
 cmp byte[pausegame], 1
 jz start_loop
