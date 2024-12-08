@@ -274,7 +274,7 @@ Reset2:
 ;---- New Game 
 newGame:
 
-mov di, 1960
+mov di, 2280
 push reset
 push word[size_reset]
 call printstr
