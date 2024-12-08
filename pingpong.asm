@@ -1,8 +1,8 @@
 [org 0x100]
 jmp start
 ; ---- Data Variables ----
-pad1: dw 1764, 1924, 2084          ; value where pad1 should print 
-pad1_x: db 11, 12, 13              ; for tracking the row number 
+pad1: dw 1764, 1924, 2084          ; value where pad1 should print
+pad1_x: db 11, 12, 13
 pad2: dw 1916, 2076, 2236          ; value where pad2 should print
 pad2_x: db 11, 12, 13
 ballx: db 12
@@ -12,9 +12,61 @@ toxpositive: db 0                  ; for x in positive flag
 toypositive: db 1                  ; for x in negative flag 
 scoreL: db 0                       ; Score for left player
 scoreR: db 0                       ; Score for Right Player
-scorediL: dw 3690                  ; di for score L 
-scorediR: dw 3828                  ; di for score R 
+scorediL: dw 3690                   ; di for score L 
+scorediR: dw 3828                   ; di for score R 
 pausegame: db 0                    ; pausegame flag 
+CollisionPad: db 0
+
+Player1: db 'Player 1 Won !!!!', 0
+length1: dw 17
+Player2: db 'Player 2 Won !!!!', 0
+length2: dw 17
+
+; ---- For printing the string ----
+printstr:
+push bp
+mov bp, sp
+pusha
+push es
+
+push 0xb800
+pop es
+
+mov cx, [bp+4]
+mov si, [bp+6]
+mov ah, 0x07
+next:
+
+lodsb
+stosw
+loop next
+pop es
+popa
+mov sp, bp
+pop bp
+ret 4
+
+UpArrowKey:
+cmp word[pad2], 636
+jl nomatch
+sub word[pad2], 160
+sub word[pad2+2], 160
+sub word[pad2+4], 160
+sub byte[pad2_x], 1
+sub byte[pad2_x + 1], 1
+sub byte[pad2_x + 2], 1
+jmp nomatch
+
+DownArrowKey:
+cmp word[pad2+4], 3518
+jg nomatch
+add word[pad2], 160
+add word[pad2+2], 160
+add word[pad2+4], 160
+add byte[pad2_x], 1
+add byte[pad2_x + 1], 1
+add byte[pad2_x + 2], 1
+jmp nomatch
 
 ; ---- For Movement in the pads ----
 
@@ -49,8 +101,8 @@ sub word[pad1], 160
 sub word[pad1+2], 160
 sub word[pad1+4], 160
 sub byte[pad1_x], 1
-sub byte[pad1_x+1], 1
-sub byte[pad1_x+2], 1
+sub byte[pad1_x + 1], 1
+sub byte[pad1_x + 2], 1
 jmp nomatch
 
 Skey:
@@ -60,30 +112,8 @@ add word[pad1], 160
 add word[pad1+2], 160
 add word[pad1+4], 160
 add byte[pad1_x], 1
-add byte[pad1_x+1], 1
-add byte[pad1_x+2], 1
-jmp nomatch
-
-UpArrowKey:
-cmp word[pad2], 636
-jl nomatch
-sub word[pad2], 160
-sub word[pad2+2], 160
-sub word[pad2+4], 160
-sub byte[pad2_x], 1
-sub byte[pad2_x+1], 1
-sub byte[pad2_x+2], 1
-jmp nomatch
-
-DownArrowKey:
-cmp word[pad2+4], 3518
-jg nomatch
-add word[pad2], 160
-add word[pad2+2], 160
-add word[pad2+4], 160
-add byte[pad1_x], 1
-add byte[pad1_x+1], 1
-add byte[pad1_x+2], 1
+add byte[pad1_x + 1], 1
+add byte[pad1_x + 2], 1
 jmp nomatch
 
 Gamepause:
@@ -136,19 +166,101 @@ mov sp, bp
 pop bp
 ret
 
+; -------- Collision checking routine
+padCollision1:
+    mov dl, [ballx]
+    cmp dl, [pad1_x]
+    jz collide1
+    cmp dl, [pad1_x + 1]
+    jz collide1
+    cmp dl, [pad1_x + 2]
+    jz collide1
+    mov byte[CollisionPad], 1
+    ret
+    collide1:
+        mov byte[CollisionPad], 0
+        ret
+padCollision2:
+    mov dl, [ballx]
+    cmp dl, [pad2_x]
+    jz collide2
+    cmp dl, [pad2_x + 1]
+    jz collide2
+    cmp dl, [pad2_x + 2]
+    jz collide2
+    mov byte[CollisionPad], 1
+    ret
+    collide2:
+        mov byte[CollisionPad], 0
+        ret
+
+; ---- Player 1 Wins ----
+player1Wins:
+pusha
+mov di, 1980
+push Player1
+push word[length1]
+call printstr
+popa
+mov ax, 0x4c00
+int 0x21
+; ---- Player 2 Wins ----
+player2Wins:
+pusha
+mov di, 1980
+push Player2
+push word[length2]
+call printstr
+popa
+mov ax, 0x4c00
+int 0x21
+
+; ----- player 1 score
+p1_score:
+    add byte[scoreL], 1
+    cmp byte[scoreL], 9
+    je player1Wins
+    skipadd_L:
+    jmp resetBallLocation
+; ----- player 2 score
+p2_score:
+    add byte[scoreR], 1
+    cmp byte[scoreR], 9
+    je player2Wins
+    skipadd_R:
+    jmp resetBallLocation
+
 ; ----- Different Case of Collision
 UpCollision:
 mov byte[toxpositive], 1
 jmp exit_checkCollision
+
 DownCollision:
 mov byte[toxpositive], 0
 jmp exit_checkCollision
+
 LeftCollision:
 mov byte[toypositive], 1
-jmp exit_checkCollision
+call padCollision1
+cmp byte[CollisionPad], 0
+jz exit_checkCollision
+jmp p2_score
+
 RightCollision:
 mov byte[toypositive], 0
+call padCollision2
+cmp byte[CollisionPad], 0
+jz exit_checkCollision
+jmp p1_score
+
+resetBallLocation:
+call delay
+call delay
+call delay
+mov byte[ballx], 12
+mov byte[bally], 40
 jmp exit_checkCollision
+
 ; ----- For checking Collision with the balls -----
 checkCollision:
 push bp
@@ -157,9 +269,9 @@ cmp byte[ballx], 2
 jle UpCollision
 cmp byte[ballx], 22
 jge DownCollision
-cmp byte[bally], 2
+cmp byte[bally], 4
 jle LeftCollision
-cmp byte[bally], 78
+cmp byte[bally], 76
 jge RightCollision
 exit_checkCollision:
 pop bp
@@ -211,7 +323,7 @@ pusha
 push es
 
 mov  ah, 0x13           ; service 13 - print string 
-mov  al, 0              ; subservice 00 – don't update cursor 
+mov  al, 0              ; subservice 01 – update cursor 
 mov  bh, 0              ; output on page 0 
 mov  bl, 7              ; normal attrib 
 mov  dh, byte[ballx]
@@ -295,8 +407,8 @@ ret
 
 ; ---- This is Start Label ----
 start:
-xor  ax, ax 
-mov  es, ax             ; point es to IVT base 
+xor ax, ax 
+mov es, ax             ; point es to IVT base 
 cli                     ; disable interrupts 
 mov  word [es:9*4], kbisr ; store offset at n*4 
 mov  [es:9*4+2], cs     ; store segment at n*4+2 
@@ -307,6 +419,8 @@ cmp byte[pausegame], 1
 jz start_loop
 call clrscr
 call printBoard
+call delay
+call delay
 call delay
 call delay
 call delay
